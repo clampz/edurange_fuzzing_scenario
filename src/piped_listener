@@ -1,0 +1,52 @@
+#!/usr/bin/python
+"""
+  piped_listener
+  by David Weinman
+  5/1/15, 7:30p
+
+---
+listens for any data (using TCP) on
+a given port and pipes any recieved info
+to a designated file per the senders id
+which is given by the send_fuzz_data and
+get_attacker_input clients
+"""
+
+"""
+This file is licensed under The DO WHAT THE FUCK YOU WANT TO License, see LICENSE for details.
+"""
+
+import sys
+import os
+from socket import *
+
+# check that there is one argument and it is numerical so that we may operate on that port number
+if (len(sys.argv) != 2 || str(type(eval(sys.argv[1]))) != int):
+	print("[!] arg error, please provide port number only")
+	sys.exit(1)
+
+MAXDATASIZE = 5000
+filename = "/tmp/calc_in_out"
+
+serverPort = eval(sys.argv[1])
+
+serverSocket = socket(AF_INET, SOCK_STREAM)
+
+serverSocket.bind(('', serverPort))
+
+serverSocket.listen(1)
+
+print('listening on %d' % serverPort)
+
+while True:
+	# get socket and receive data
+	connectionSocket, addr = serverSocket.accept()
+	data = connectionSocket.recv(MAXDATASIZE)
+	teamnum = data.split(':')[0] # get the team name for the source of this data
+	fh = open(filename + '_team' + str(teamnum), "a") # create a file handle w. given team num
+	datatowrite = data[( len(data.split(":")[0]) + 1 ):] # assign all the input except for the team num
+	fh.write(datatowrite + '\n') # write the data
+	# close file handle and socket
+	fh.close()
+	connectionSocket.close()
+
