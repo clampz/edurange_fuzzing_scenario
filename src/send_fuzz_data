@@ -3,7 +3,7 @@
 
 # This file is licensed under The DO WHAT THE FUCK YOU WANT TO License, see LICENSE for details.
 
-
+# usage check (for number of args)
 if [ ! $# -eq 1 ]; then
   echo "Usage: send_fuzz_data <data>
 Example:
@@ -11,12 +11,26 @@ Example:
 sh$ send_fuzz_data \"1 ++ 2\""
   exit
 fi
+
+# sanity check for input (for colons)
 if [ $(echo $1 | grep -q ":"; echo $?) ]; then
-  echo "there's a : in the input, aborting! the scoring system uses the : to parse :("
+  echo "ONOES, there's a : in the input - aborting! the scoring system uses the : to parse :("
+  exit
+fi
+
+# config file sanity checks (for length and type)
+CONFIG_FILE="/etc/attacker.conf"
+CONFIG_LEN=$(cat $CONFIG_FILE | wc -m | awk '{print $(NF)}')
+if [[ ( ! $CONFIG_LEN -eq 2 ) && ( ! $CONFIG_LEN -eq 3 ) ]]; then
+  echo "It looks like the send_fuzz_data config file is malformed, please fix!"
+  exit
+fi
+if [[ ! $(cat $CONFIG_FILE) =~ ^[0-9]+$ ]]; then
+  echo "It looks like the send_fuzz_data config file is malformed, please fix!"
   exit
 fi
 
 DEFENDING_HOST="10.0.26.130"
 
-echo "$1" | nc $DEFENDING_HOST 1337
+echo "$(cat $CONFIG_FILE):$1" | nc $DEFENDING_HOST 1337
 
