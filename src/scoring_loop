@@ -13,18 +13,20 @@ mkdir $SCOREDIRNAME
 cd $SCOREDIRNAME
 
 SCOREBOARD_FILE="/tmp/scoring/answers"
+CONFIG_FILE="/tmp/scoring/config"
 
 SECONDS_BETWEEN_CHECK=3
 
 LINES_IN_HEADER=4
 # if there is no scoreboard, make a header
-if [ ! $(wc -c $SCOREBOARD_FILE | awk '{print $(NF - 1)}') -gt 1 ]; then
-  SCOREBOARD_PADDING=$(perl -e 'print " " x 20')
-  echo "$SCOREBOARD_PADDING+---------------------------+" >> $SCOREBOARD_FILE
-  echo "$SCOREBOARD_PADDING|       FUZZING SCORE       |" >> $SCOREBOARD_FILE
-  echo "$SCOREBOARD_PADDING+---------------------------+" >> $SCOREBOARD_FILE
-  echo "$SCOREBOARD_PADDING" >> $SCOREBOARD_FILE
-fi
+# there needs to be a loop here for every scoreboard file
+  if [ ! $(wc -c $SCOREBOARD_FILE | awk '{print $(NF - 1)}') -gt 1 ]; then
+    SCOREBOARD_PADDING=$(perl -e 'print " " x 20')
+    echo "$SCOREBOARD_PADDING+---------------------------+" >> $SCOREBOARD_FILE
+    echo "$SCOREBOARD_PADDING|       FUZZING SCORE       |" >> $SCOREBOARD_FILE
+    echo "$SCOREBOARD_PADDING+---------------------------+" >> $SCOREBOARD_FILE
+    echo "$SCOREBOARD_PADDING" >> $SCOREBOARD_FILE
+  fi
 
 INPT_OUTPT_FILE="/tmp/calc_in_out"
 ERRLOG="$FIRST_CWD/$SCOREDIRNAME/scoring_errlog.txt"
@@ -53,6 +55,9 @@ while [ 0 ]; do
     # parse input to calc out of the last line in 'input output pair' file
     MOST_RECENT_LINE="$(sed -n "$LINES_READ_IN_OUT p" $INPT_OUTPT_FILE)"
 
+    # get the team number on the last line
+    TEAMNUM="$(echo "$MOST_RECENT_LINE" | awk -F: '{print $(NF - 3)}')"
+
     # get output and input on last line
     INPUT="$(echo "$MOST_RECENT_LINE" | awk -F: '{print $(NF - 2)}')"
     OUTPUT="$(echo "$MOST_RECENT_LINE" | awk -F: '{print $(NF)}')"
@@ -64,12 +69,12 @@ while [ 0 ]; do
     # find out what the points are currently, if there isn't any points in
     # /tmp/scoring/answers then assign zero to each team, if there is then get
     # the most current points acquired 
-    if [ "$LINES_IN_HEADER" = "$(wc -l $SCOREBOARD_FILE | awk '{print $(NF - 1)}')" ]; then
+    if [ "$LINES_IN_HEADER" = "$(wc -l $SCOREBOARD_FILE_$TEAMNUM | awk '{print $(NF - 1)}')" ]; then
         DEFENDING_PTS="0"
         ATTACKING_PTS="0"
     else
-        DEFENDING_PTS="$(tail --lines=1 $SCOREBOARD_FILE | awk '{print $(NF - 3)}')"
-        ATTACKING_PTS="$(tail --lines=1 $SCOREBOARD_FILE | awk '{print $(NF)}')"
+        DEFENDING_PTS="$(tail --lines=1 $SCOREBOARD_FILE_$TEAMNUM | awk '{print $(NF - 3)}')"
+        ATTACKING_PTS="$(tail --lines=1 $SCOREBOARD_FILE_$TEAMNUM | awk '{print $(NF)}')"
     fi
 
     NOW=$(date +%m/%d/%y**%H:%M:%S)

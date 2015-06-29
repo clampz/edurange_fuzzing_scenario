@@ -8,14 +8,15 @@
 
 # This file is licensed under The DO WHAT THE FUCK YOU WANT TO License, see LICENSE for details.
 
-# if the given arument count isn't equal to two then the script isn't being used correctly
+# if the given arument count isn't equal to four then the script isn't being used correctly
 # 		-> print usage and exit
-if [ ! $# -eq 1 ]; then
+if [ ! $# -eq 3 ]; then
 
-  echo "Usage: get_attacker_input calc
+  echo "Usage: get_attacker_input recordfile calc teamnum
 
+recordfile: path to input file
 calc: path to calculator executable
-lmodtime: last time record was modified
+teamnum: id for team (assuming this is a number)
 "
   exit
 
@@ -44,11 +45,12 @@ end
 q
 " > gdb_script_back
 
-CALC_EXEC="$1" # calc exec filename
+CALC_EXEC="$2" # calc exec filename
 rm /tmp/calc_in_out
 touch /tmp/calc_in_out
 LASTLINEREAD="$(wc -l /tmp/calc_in_out | awk '{print $(NF - 1)}')" # last line read in recordfile 
-RECORDFILE="/tmp/calc_in_out"
+TEAMNUM="$3" # team identifier
+RECORDFILE="$1" # input filename
 DEFENDING_LOG_FILE="/tmp/timestamped_fuzz_log.txt"
 DEFENDING_RECORD_FILE="/tmp/fuzz_record.txt"
 SCORING_HOST="10.0.26.128"
@@ -118,7 +120,7 @@ myout = gdb.execute(\"run < input_file.txt 1> $DEFENDING_RECORD_FILE 2> $DEFENDI
 
       NOW="$(date +%m-%d--%H:%M:%S)"
       grep '0x' "./$TMP_FILE" > /tmp/crash_addr_$NOW.txt
-      echo "$INPUT:1:$(cat /tmp/crash_addr_$NOW.txt)" | nc $SCORING_HOST 3456 
+      echo "$TEAMNUM:$INPUT:1:$(cat /tmp/crash_addr_$NOW.txt)" | nc $SCORING_HOST 3456 
       PRETTY_INPUT="$(blacklist_replace "$INPUT")"
       echo "$NOW: fuzz_data: $PRETTY_INPUT : [!!] calculator crashed!" | nc $ATTACKING_HOST 2222 
       echo "$NOW: fuzz data: $PRETTY_INPUT : [!!] calculator crashed, crash address: $(cat /tmp/crash_addr_$NOW.txt)." >> $DEFENDING_LOG_FILE
@@ -133,7 +135,7 @@ myout = gdb.execute(\"run < input_file.txt 1> $DEFENDING_RECORD_FILE 2> $DEFENDI
       if [ "$OUTPUT" = "" ]; then
         OUTPUT="$(cat stderror.txt)"
       fi
-      echo "$INPUT:0:$OUTPUT" | nc $SCORING_HOST 3456 
+      echo "$TEAMNUM:$INPUT:0:$OUTPUT" | nc $SCORING_HOST 3456 
       PRETTY_INPUT="$(blacklist_replace "$INPUT")"
       echo "$NOW: fuzz_data: $PRETTY_INPUT : calc_out: $OUTPUT" | nc $ATTACKING_HOST 2222
       echo "$NOW: fuzz_data: $PRETTY_INPUT : calc_out: $OUTPUT" >> $DEFENDING_LOG_FILE

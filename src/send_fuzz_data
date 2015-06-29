@@ -11,6 +11,10 @@ Example:
 sh$ send_fuzz_data \"1 ++ 2\""
   exit
 fi
+if [ $(echo $1 | grep -q ":"; echo $?) ]; then
+  echo "there's a : in the input, aborting! the scoring system uses the : to parse :("
+  exit
+fi
 
 DEFENDING_HOST="10.0.26.130"
 
